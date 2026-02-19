@@ -1,0 +1,491 @@
+:root {
+    --primary: #FF4B4B; /* Couleur Tinder-like */
+    --secondary: #2C2C2E;
+    --bg: #121212;
+    --text: #ffffff;
+    --text-muted: #aaaaaa;
+    --success: #4CAF50;
+    --card-bg: #1E1E1E;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    user-select: none; /* Empêche la sélection de texte pendant le swipe */
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 500px; /* Max largeur mobile */
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background-color: #000;
+}
+
+/* MODAL RECETTE */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+}
+.modal-content {
+    background: var(--card-bg);
+    width: 90%; max-width: 400px;
+    border-radius: 20px;
+    padding: 25px;
+    position: relative;
+    max-height: 85vh;
+    overflow-y: auto;
+    border: 1px solid #333;
+}
+.close-modal {
+    position: absolute;
+    top: 15px; right: 20px;
+    background: none; border: none;
+    color: #fff; font-size: 2rem;
+    cursor: pointer;
+}
+#modal-title { color: var(--primary); margin-bottom: 5px; }
+.modal-meta { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+.modal-body h4 { color: #fff; margin: 15px 0 10px; }
+.modal-body ul, .modal-body ol { padding-left: 20px; color: #ccc; font-size: 0.95rem; line-height: 1.5; }
+.add-meal-btn {
+    width: 100%;
+    padding: 15px;
+    background: var(--success);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: bold;
+    margin-top: 25px;
+    cursor: pointer;
+}
+
+/* HEADER */
+header {
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--card-bg);
+}
+
+h1 { font-size: 1.5rem; font-weight: 700; }
+#streak-counter { color: orange; font-weight: bold; }
+
+/* MAIN CONTENT */
+main {
+    flex: 1;
+    overflow-y: auto;
+    position: relative;
+    padding-bottom: 80px; /* Espace pour la barre de nav */
+}
+
+.hidden-section { display: none; }
+.active-section { display: block; animation: fadeIn 0.3s; }
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* WORKOUT CARD STACK (TINDER STYLE) */
+.day-selector {
+    display: flex;
+    gap: 10px;
+    padding: 15px;
+    overflow-x: auto;
+}
+
+.day-btn {
+    background: var(--secondary);
+    border: none;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 20px;
+    white-space: nowrap;
+    cursor: pointer;
+    flex: 1;
+}
+
+.day-btn:active, .day-btn.active { background: var(--primary); }
+
+.card-container {
+    position: relative;
+    height: 400px;
+    margin: 20px;
+    perspective: 1000px;
+}
+
+.tinder-card {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 20px;
+    display: flex; /* Keep flex for cases without wrapper or just centering the wrapper? */
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    border: 1px solid #333;
+    overflow: hidden; /* Important pour la video */
+}
+
+/* VIDEO BACKGROUND STYLES */
+.card-bg-video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    opacity: 0.4;
+}
+
+.video-overlay {
+    position: absolute;
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.8));
+    z-index: 1;
+}
+
+.card-content-wrapper {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Ensure text is readable over video */
+.video-active h2, .video-active h3, .video-active p, .video-active div { text-shadow: 0 2px 4px rgba(0,0,0,0.9); }
+.video-active h2 { color: #fff !important; }
+
+.tinder-card .tinder-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+}
+
+.tinder-card .swipe-instruction {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: auto;
+}
+
+.video-active .swipe-instruction {
+    color: #ccc;
+}
+
+#import-json {
+    width: 100%;
+    height: 100px;
+    background: #333;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+#import-status {
+    font-size: 0.8rem;
+    margin-top: 5px;
+}
+
+/* Ensure canvas has dimensions via container, not inline */
+.chart-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+}
+
+.tinder-card h2 { font-size: 2rem; margin-bottom: 10px; text-align: center; color: var(--primary); }
+.tinder-card h3 { font-size: 1.2rem; color: var(--text-muted); margin-bottom: 20px; }
+.tinder-card .details { text-align: center; margin-bottom: 20px; font-size: 1.1rem; }
+.tinder-card .input-weight {
+    background: #333;
+    border: none;
+    color: white;
+    padding: 10px;
+    width: 100px;
+    text-align: center;
+    font-size: 1.2rem;
+    border-radius: 10px;
+    margin-top: 10px;
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+}
+.empty-state i { font-size: 3rem; margin-bottom: 10px; }
+
+/* SWIPE CONTROLS */
+.swipe-controls {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 20px;
+}
+
+.control-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    transition: transform 0.1s;
+}
+.control-btn:active { transform: scale(0.9); }
+.reject { background: white; color: var(--primary); border: 2px solid var(--primary); }
+.accept { background: linear-gradient(to right, #fd297b, #ff655b); color: white; }
+
+/* NUTRITION */
+.nutrition-dashboard {
+    display: flex;
+    justify-content: space-around;
+    padding: 20px;
+}
+.macro-card {
+    background: var(--card-bg);
+    padding: 15px;
+    border-radius: 15px;
+    text-align: center;
+    width: 45%;
+}
+.progress-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 5px solid var(--secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 10px auto;
+    font-size: 1.2rem;
+    font-weight: bold;
+    position: relative;
+    background: conic-gradient(var(--progress-color, #FF4B4B) var(--percentage, 0%), var(--secondary) 0%);
+}
+
+#prot-progress {
+    --progress-color: #4CAF50;
+}
+
+.badge-swipe {
+    position: absolute;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 2rem;
+    padding: 5px 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    background: rgba(0,0,0,0.4);
+    z-index: 10;
+}
+
+.badge-success {
+    top: 40px; 
+    left: 40px; 
+    color: #4CAF50; 
+    border: 4px solid #4CAF50; 
+    transform: rotate(-15deg);
+}
+
+.badge-fail {
+    top: 40px; 
+    right: 40px; 
+    color: #FF4B4B; 
+    border: 4px solid #FF4B4B; 
+    transform: rotate(15deg);
+}
+
+.saved-success {
+    background: #4CAF50 !important;
+}
+
+.input-group {
+    display: flex;
+    gap: 5px;
+    margin-top: 10px;
+}
+.input-group input {
+    width: 100%;
+    background: #333;
+    border: none;
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+}
+.input-group button {
+    background: var(--primary);
+    border: none;
+    color: white;
+    width: 30px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.meal-log { padding: 0 20px; }
+.meal-log ul { list-style: none; margin-top: 10px; }
+.meal-log li { padding: 10px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; }
+.reset-btn { width: 100%; padding: 10px; margin-top: 20px; background: #333; color: white; border:none; border-radius: 10px; }
+
+/* STATS */
+.stats-summary-grid {
+    display: flex;
+    gap: 15px;
+    padding: 20px 20px 0 20px;
+}
+
+.kpi-card {
+    background: var(--card-bg);
+    padding: 15px;
+    border-radius: 15px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.kpi-label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+.kpi-value { font-size: 1.5rem; font-weight: bold; color: white; }
+
+.stats-card { 
+    background: var(--card-bg); 
+    margin: 20px; 
+    padding: 20px; 
+    border-radius: 15px; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 15px; }
+.card-header h3 { font-size: 1.1rem; margin: 0; }
+.card-header small { color: var(--text-muted); font-size: 0.8rem; }
+
+.stat-row { display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+#workout-history { list-style: none; }
+#workout-history li { padding: 10px 0; color: var(--text-muted); font-size: 0.9rem; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+
+/* Correction Containers Charts */
+.chart-container { 
+    position: relative; 
+    width: 100%; 
+    display: flex;
+    justify-content: center;
+}
+.donut-container { height: 220px; } /* Donut a besoin de hauteur carrée */
+.bar-container { height: 180px; }   /* Barres mieux en rectangle allongé */
+
+/* NUTRITION SUGGESTIONS */
+.suggestions-container { padding: 0 20px; margin-top: 20px; }
+.suggestions-container h3 { font-size: 1rem; color: var(--text-muted); margin-bottom: 10px; }
+
+.horizontal-scroll {
+    display: flex;
+    overflow-x: auto;
+    gap: 15px;
+    padding-bottom: 10px;
+    scrollbar-width: none; /* Firefox */
+}
+.horizontal-scroll::-webkit-scrollbar { display: none; } /* Chrome */
+
+.suggestion-card {
+    background: #252528;
+    min-width: 160px;
+    padding: 15px;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.suggestion-card h4 { font-size: 0.95rem; margin-bottom: 5px; color: white; }
+.suggestion-card p { font-size: 0.8rem; color: #888; margin-bottom: 10px; }
+.suggestion-card span { font-size: 0.75rem; background: rgba(76, 175, 80, 0.2); color: #4CAF50; padding: 3px 8px; border-radius: 10px; width: fit-content; }
+
+/* PROFILE UPDATED */
+.profile-header { text-align: center; padding: 30px 20px 20px; }
+.avatar-circle { 
+    width: 80px; height: 80px; background: #333; border-radius: 50%; margin: 0 auto 15px; 
+    display: flex; align-items: center; justify-content: center; font-size: 2.5rem; border: 2px solid var(--primary);
+}
+.subtitle { color: var(--text-muted); font-size: 0.9rem; margin-top: 5px; }
+
+.profile-card { background: var(--card-bg); margin: 0 20px 20px; padding: 20px; border-radius: 15px; }
+.profile-card h3 { font-size: 1.1rem; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+
+.input-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.input-row input { background: #121212; border: 1px solid #333; color: white; padding: 8px; border-radius: 8px; width: 80px; text-align: center; }
+
+.save-btn { width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; }
+
+.reminder-list { list-style: none; }
+.reminder-list li { margin-bottom: 12px; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; }
+
+.danger-zone { border: 1px solid rgba(255, 75, 75, 0.3); background: rgba(255, 75, 75, 0.05); }
+.danger-zone p { color: #aaa; font-size: 0.85rem; margin-bottom: 15px; }
+.delete-btn { width: 100%; padding: 12px; background: transparent; border: 1px solid #FF4B4B; color: #FF4B4B; border-radius: 10px; cursor: pointer; }
+.delete-btn:active { background: #FF4B4B; color: white; }
+
+/* NAV */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    max-width: 500px;
+    height: 70px;
+    background: #000;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    border-top: 1px solid #333;
+}
+
+.nav-item {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.8rem;
+    cursor: pointer;
+    flex: 1;
+}
+
+.nav-item i { font-size: 1.4rem; margin-bottom: 5px; }
+.nav-item.active { color: var(--primary); }
