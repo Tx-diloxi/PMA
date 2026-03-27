@@ -1,6 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . '/../src/functions.php';
+startSession();
 session_unset();
 session_destroy();
-header('Location: login.php');
-exit;
+redirect('login.php');

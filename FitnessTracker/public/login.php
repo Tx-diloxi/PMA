@@ -1,20 +1,17 @@
 <?php
-session_start();
-require_once __DIR__ . '/../src/db.php';
+require_once __DIR__ . '/../src/functions.php';
+startSession();
+$pdo = getPdo();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = filter_var(trim($_POST['email'] ?? ''), FILTER_VALIDATE_EMAIL);
     $password = $_POST['password'] ?? '';
 
     if ($email && $password) {
-        $stmt = $pdo->prepare('SELECT * FROM utilisateurs WHERE email = :email');
-        $stmt->execute(['email' => $email]);
-        $user = $stmt->fetch();
-
+        $user = findUserByEmail($pdo, $email);
         if ($user && password_verify($password, $user['mot_de_passe'])) {
             $_SESSION['user_id'] = $user['id'];
-            header('Location: home.php');
-            exit;
+            redirect('home.php');
         } else {
             $error = 'Email ou mot de passe incorrect.';
         }

@@ -1,4 +1,3 @@
--- init.sql : modèle de base de données pour FitnessTracker (français)
 DROP DATABASE IF EXISTS fittracker;
 CREATE DATABASE fittracker CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE fittracker;

@@ -1,19 +1,21 @@
 version: '3.8'
 services:
   db:
-    image: mariadb:10.11
+    image: bigpapoo/r408-mysql:5.7
     container_name: fittracker_db
     restart: unless-stopped
     environment:
-      MARIADB_ROOT_PASSWORD: rootpassword
-      MARIADB_DATABASE: fittracker
-      MARIADB_USER: fituser
-      MARIADB_PASSWORD: fitpass
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=fittracker
+      - MYSQL_USER=fituser
+      - MYSQL_PASSWORD=fitpass
     volumes:
-      - db_data:/var/lib/mysql
+      - mysql_vol:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "3306:3306"
+    networks:
+      - rezo_fittracker
 
   web:
     build:
@@ -33,6 +35,24 @@ services:
       DB_NAME: fittracker
       DB_USER: fituser
       DB_PASSWORD: fitpass
+    networks:
+      - rezo_fittracker
+
+  pma:
+    image: bigpapoo/r408-phpmyadmin:5.2
+    container_name: fittracker_pma
+    restart: unless-stopped
+    ports:
+      - "8060:80"
+    environment:
+      - PMA_HOST=db
+    depends_on:
+      - db
+    networks:
+      - rezo_fittracker
+
+networks:
+  rezo_fittracker:
 
 volumes:
-  db_data:
+  mysql_vol:
