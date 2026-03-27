@@ -6,9 +6,9 @@ services:
     restart: unless-stopped
     environment:
       - MYSQL_ROOT_PASSWORD=rootpassword
-      - MYSQL_DATABASE=fittracker
-      - MYSQL_USER=fituser
-      - MYSQL_PASSWORD=fitpass
+      - MYSQL_DATABASE=${DB_SCHEMA}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
     volumes:
       - mysql_vol:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -27,14 +27,13 @@ services:
     volumes:
       - ./public:/var/www/html
       - ./src:/var/www/src
-      - ./assets:/var/www/assets
     ports:
       - "8080:80"
     environment:
       DB_HOST: db
-      DB_NAME: fittracker
-      DB_USER: fituser
-      DB_PASSWORD: fitpass
+      DB_NAME: ${DB_SCHEMA}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
     networks:
       - rezo_fittracker
 

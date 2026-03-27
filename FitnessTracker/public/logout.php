@@ -1,6 +1,9 @@
 <?php
-require_once __DIR__ . '/../src/functions.php';
-startSession();
+session_start();
+
 session_unset();
 session_destroy();
-redirect('login.php');
+
+header('Location: connexion.php');
+exit;
+?>

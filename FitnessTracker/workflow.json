@@ -1,0 +1,604 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fit-inscription-webhook",
+        "options": {}
+      },
+      "id": "9a934d50-474f-4ebb-a20d-a4687bb0547c",
+      "name": "Webhook Trigger Inscription1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -1312,
+        2880
+      ],
+      "webhookId": "fit-inscription-webhook"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, pseudo, age, sexe, poids, taille, objectif, jours_disponibilite, materiel FROM fittracker.utilisateurs WHERE id = {{ $json.body.user_id }}",
+        "options": {}
+      },
+      "id": "5fd0319f-c172-4601-bf27-cb44a447ef91",
+      "name": "Récup Infos Utilisateur",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2,
+      "position": [
+        -1088,
+        2880
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "CJjOPa02keKaWtvB",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT nom, muscles, difficulte FROM fittracker.exercices",
+        "options": {}
+      },
+      "id": "aff2790c-d1f7-47a5-a50d-e1606891b64f",
+      "name": "Récup Liste Exercices",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2,
+      "position": [
+        -864,
+        2880
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "CJjOPa02keKaWtvB",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let user = $('Récup Infos Utilisateur').first().json;\nlet exercices = $('Récup Liste Exercices').all().map(e => e.json);\n\n// Calcul BMR (Mifflin-St Jeor)\nlet bmr = (user.sexe === 'Homme')\n  ? (10 * user.poids) + (6.25 * user.taille) - (5 * user.age) + 5\n  : (10 * user.poids) + (6.25 * user.taille) - (5 * user.age) - 161;\n\n// TDEE avec facteur activité modéré\nlet tdee = bmr * 1.4;\nlet calObj = tdee;\n\nswitch (user.objectif) {\n  case 'Perte de poids':             calObj = tdee * 0.80; break;\n  case 'Prise de masse':             calObj = tdee * 1.15; break;\n  case 'Restructuration corporelle': calObj = tdee * 0.95; break;\n  default:                           calObj = tdee; break;\n}\n\n// Enrichissement date\nconst now = new Date();\nconst jourSemaine = now.getDay(); // 0=dim, 1=lun ... 6=sam\nconst debutAnnee = new Date(now.getFullYear(), 0, 1);\nconst numSemaine = Math.ceil(((now - debutAnnee) / 86400000 + debutAnnee.getDay() + 1) / 7);\n\n// Phase de périodisation sur 3 semaines cycliques\nconst phases = ['montee', 'pic', 'decharge'];\nconst phaseHebdo = phases[numSemaine % 3];\n\n// Sélection du split selon jours disponibles\nconst jours = parseInt(user.jours_disponibilite);\nlet splitSelectionne;\nif (jours <= 2)      splitSelectionne = 'Full Body';\nelse if (jours === 3) splitSelectionne = 'Push / Pull / Legs';\nelse if (jours <= 5)  splitSelectionne = 'Upper / Lower';\nelse                  splitSelectionne = 'PPL 6 jours';\n\n// Exercices enrichis (nom + muscles + difficulté)\nconst listeExercicesDetails = exercices.map(e => `${e.nom} [${e.muscles}] (${e.difficulte})`).join(' | ');\nconst listeExercicesNoms = exercices.map(e => e.nom).join(', ');\n\nreturn {\n  json: {\n    ...user,\n    liste_exercices_dispo: listeExercicesNoms,\n    liste_exercices_details: listeExercicesDetails,\n    calc_calories:  Math.round(calObj),\n    calc_proteines: Math.round(user.poids * (user.objectif.includes('Restructuration') ? 2.2 : 2)),\n    calc_lipides:   Math.round(user.poids * 0.9),\n    calc_glucides:  Math.round((calObj - (user.poids * 2 * 4) - (user.poids * 0.9 * 9)) / 4),\n    jour_semaine:   jourSemaine,\n    num_semaine:    numSemaine,\n    phase_hebdo:    phaseHebdo,\n    split_selectionne: splitSelectionne\n  }\n};"
+      },
+      "id": "2262a1ec-4f1d-4ef5-a126-e03a500b265e",
+      "name": "Calculs & Préparation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        2880
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.split_selectionne }}",
+                    "rightValue": "Full Body",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "split-fullbody"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.split_selectionne }}",
+                    "rightValue": "Push / Pull / Legs",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "split-ppl"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.split_selectionne }}",
+                    "rightValue": "Upper / Lower",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "split-upperlower"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.split_selectionne }}",
+                    "rightValue": "PPL 6 jours",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "split-ppl6"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d796ee74-6702-4c86-bf53-02d8e17e2cb3",
+      "name": "Switch — Jours d'entraînement",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -416,
+        2848
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.objectif }}",
+                    "rightValue": "Perte de poids",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "obj-perte-homme"
+                  },
+                  {
+                    "leftValue": "={{ $json.sexe }}",
+                    "rightValue": "Homme",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "sexe-homme-perte"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.objectif }}",
+                    "rightValue": "Perte de poids",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "obj-perte-femme"
+                  },
+                  {
+                    "leftValue": "={{ $json.sexe }}",
+                    "rightValue": "Femme",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "sexe-femme-perte"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.objectif }}",
+                    "rightValue": "Prise de masse",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "obj-masse-homme"
+                  },
+                  {
+                    "leftValue": "={{ $json.sexe }}",
+                    "rightValue": "Homme",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "sexe-homme-masse"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.objectif }}",
+                    "rightValue": "Prise de masse",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "obj-masse-femme"
+                  },
+                  {
+                    "leftValue": "={{ $json.sexe }}",
+                    "rightValue": "Femme",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "sexe-femme-masse"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.objectif }}",
+                    "rightValue": "Restructuration corporelle",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "obj-restr-homme"
+                  },
+                  {
+                    "leftValue": "={{ $json.sexe }}",
+                    "rightValue": "Homme",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "sexe-homme-restr"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.objectif }}",
+                    "rightValue": "Restructuration corporelle",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "obj-restr-femme"
+                  },
+                  {
+                    "leftValue": "={{ $json.sexe }}",
+                    "rightValue": "Femme",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "sexe-femme-restr"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.objectif }}",
+                    "rightValue": "Maintien",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "obj-maintien-homme"
+                  },
+                  {
+                    "leftValue": "={{ $json.sexe }}",
+                    "rightValue": "Homme",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "sexe-homme-maintien"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.objectif }}",
+                    "rightValue": "Maintien",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "obj-maintien-femme"
+                  },
+                  {
+                    "leftValue": "={{ $json.sexe }}",
+                    "rightValue": "Femme",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "sexe-femme-maintien"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.objectif }}",
+                    "rightValue": "Amélioration de la condition physique",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "obj-cardio-homme"
+                  },
+                  {
+                    "leftValue": "={{ $json.sexe }}",
+                    "rightValue": "Homme",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "sexe-homme-cardio"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.objectif }}",
+                    "rightValue": "Amélioration de la condition physique",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "obj-cardio-femme"
+                  },
+                  {
+                    "leftValue": "={{ $json.sexe }}",
+                    "rightValue": "Femme",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "sexe-femme-cardio"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fca1b7f2-4c38-4dff-9ffc-3c508b86768b",
+      "name": "Switch — Objectif × Sexe",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -192,
+        2752
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger Inscription1": {
+      "main": [
+        [
+          {
+            "node": "Récup Infos Utilisateur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Récup Infos Utilisateur": {
+      "main": [
+        [
+          {
+            "node": "Récup Liste Exercices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Récup Liste Exercices": {
+      "main": [
+        [
+          {
+            "node": "Calculs & Préparation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculs & Préparation": {
+      "main": [
+        [
+          {
+            "node": "Switch — Jours d'entraînement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch — Jours d'entraînement": {
+      "main": [
+        [
+          {
+            "node": "Switch — Objectif × Sexe",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch — Objectif × Sexe",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch — Objectif × Sexe",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch — Objectif × Sexe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch — Objectif × Sexe": {
+      "main": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a0b4d2578562f00eb61cdd70c33d10a76b346e09caafe3108cd60acb64ce4643"
+  }
+}

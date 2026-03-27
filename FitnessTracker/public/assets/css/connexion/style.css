@@ -1,0 +1,176 @@
+/* Style moderne et épuré pour connexion.php et inscription.php */
+:root {
+  --bg: #f7f8fb;
+  --card: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --danger: #ef4444;
+  --border: #e5e7eb;
+  --shadow: 0 12px 28px rgba(31, 41, 55, 0.08);
+  --radius: 16px;
+  --font: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font);
+  background: radial-gradient(circle at top center, #ffffff 0%, var(--bg) 55%);
+  color: var(--text);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+main {
+  width: min(96%, 520px);
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  padding: 2rem;
+  margin: 2rem 0;
+}
+
+h1 {
+  font-size: 1.85rem;
+  margin: 0 0 1.1rem;
+  text-align: center;
+  color: #111827;
+}
+
+form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+label {
+  font-size: 0.95rem;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+select {
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  background: #ffffff;
+  color: #111827;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
+}
+
+input[type="checkbox"] {
+  accent-color: var(--primary);
+  margin-right: 0.55rem;
+}
+
+#jours_disponibilite,
+#materiel {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  margin-bottom: 0.3rem;
+}
+
+#jours_disponibilite label,
+#materiel label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.92rem;
+  color: #475569;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 0.45rem 0.7rem;
+  background: #f8fafc;
+  cursor: pointer;
+}
+
+button[type="submit"] {
+  width: 100%;
+  padding: 0.82rem;
+  margin-top: 0.3rem;
+  border: none;
+  border-radius: 0.85rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), #1e40af);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+button[type="submit"]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 20px rgba(37, 99, 235, 0.24);
+  background: var(--primary-hover);
+}
+
+button[type="submit"]:active {
+  transform: translateY(0);
+}
+
+div > p, div > a {
+  text-align: center;
+  margin: 0.45rem 0;
+  font-size: 0.92rem;
+}
+
+div > a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+div > a:hover {
+  text-decoration: underline;
+}
+
+p.error {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.24);
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.7rem;
+  margin-top: 0;
+}
+
+p.success {
+  color: #16a34a;
+  background: rgba(22, 163, 74, 0.12);
+  border: 1px solid rgba(22, 163, 74, 0.24);
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.7rem;
+  margin-top: 0;
+}
+
+@media (max-width: 480px) {
+  main {
+    border-radius: 14px;
+    padding: 1.1rem;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+  }
+}
