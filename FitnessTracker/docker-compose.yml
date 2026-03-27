@@ -1,0 +1,38 @@
+version: '3.8'
+services:
+  db:
+    image: mariadb:10.11
+    container_name: fittracker_db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: rootpassword
+      MARIADB_DATABASE: fittracker
+      MARIADB_USER: fituser
+      MARIADB_PASSWORD: fitpass
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "3306:3306"
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: fittracker_web
+    depends_on:
+      - db
+    volumes:
+      - ./public:/var/www/html
+      - ./src:/var/www/src
+      - ./assets:/var/www/assets
+    ports:
+      - "8080:80"
+    environment:
+      DB_HOST: db
+      DB_NAME: fittracker
+      DB_USER: fituser
+      DB_PASSWORD: fitpass
+
+volumes:
+  db_data:
