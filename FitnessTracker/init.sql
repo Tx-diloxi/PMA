@@ -16,6 +16,11 @@ CREATE TABLE fittracker.utilisateurs (
     poids DECIMAL(5, 2) NOT NULL,
     taille DECIMAL(5, 2) NOT NULL,
     objectif VARCHAR(255) DEFAULT 'Maintien',
+    niveau ENUM(
+        'Débutant',
+        'Intermédiaire',
+        'Avancé'
+    ) DEFAULT 'Débutant',
     jours_disponibilite VARCHAR(255) NOT NULL,
     materiel VARCHAR(255) DEFAULT 'Rien',
     date_fin DATE NOT NULL,
