@@ -293,4 +293,226 @@ VALUES
     'Cardio',
     'Débutant',
     'Mollets, Cardio, Avant-bras'
+),
+
+-- Catégorie : Musculation (supplémentaire)
+(
+    'Pompes diamant',
+    'Pompes avec les mains jointes formant un diamant sous la poitrine pour cibler intensément les triceps.',
+    'images/pompes_diamant.jpg',
+    'Musculation',
+    'Intermédiaire',
+    'Triceps, Pectoraux intérieurs'
+),
+(
+    'Tractions supination',
+    'Suspension à une barre avec paumes tournées vers soi et tirage du corps jusqu''au menton.',
+    'images/tractions_supination.jpg',
+    'Musculation',
+    'Avancé',
+    'Grand dorsal, Biceps'
+),
+(
+    'Squats sumo',
+    'Squats avec pieds très écartés et pointes tournées vers l''extérieur.',
+    'images/squats_sumo.jpg',
+    'Musculation',
+    'Débutant',
+    'Quadriceps, Adducteurs, Fessiers'
+),
+(
+    'Fentes arrière',
+    'Reculer un pied et fléchir les deux jambes à 90 degrés avant de revenir.',
+    'images/fentes_arriere.jpg',
+    'Musculation',
+    'Débutant',
+    'Quadriceps, Fessiers, Ischio-jambiers'
+),
+(
+    'Développé militaire',
+    'Pousser une barre ou des haltères au-dessus de la tête en partant des épaules.',
+    'images/developpe_militaire.jpg',
+    'Musculation',
+    'Intermédiaire',
+    'Épaules, Triceps'
+),
+(
+    'Rowing barre',
+    'Tirage d''une barre vers le buste en position penchée avec le dos droit.',
+    'images/rowing_barre.jpg',
+    'Musculation',
+    'Intermédiaire',
+    'Dos, Biceps'
+),
+(
+    'Élévations latérales',
+    'Lever les haltères latéralement jusqu''à hauteur des épaules.',
+    'images/elevations_laterales.jpg',
+    'Musculation',
+    'Débutant',
+    'Deltoïdes latéraux'
+),
+(
+    'Soulevé de terre roumain',
+    'Flexion du buste avec barre en gardant les jambes presque tendues et la colonne neutre.',
+    'images/romanian_deadlift.jpg',
+    'Musculation',
+    'Intermédiaire',
+    'Ischio-jambiers, Fessiers, Lombaires'
+),
+(
+    'Extensions triceps',
+    'Extension des coudes au-dessus de la tête avec un haltère ou une barre.',
+    'images/extensions_triceps.jpg',
+    'Musculation',
+    'Débutant',
+    'Triceps'
+),
+(
+    'Flyes pectoraux',
+    'Écartement des bras avec haltères en position allongée sur un banc.',
+    'images/flyes_pectoraux.jpg',
+    'Musculation',
+    'Intermédiaire',
+    'Pectoraux'
+),
+(
+    'Élévations mollets',
+    'Monter sur la pointe des pieds avec ou sans charge pour contracter les mollets.',
+    'images/elevations_mollets.jpg',
+    'Musculation',
+    'Débutant',
+    'Mollets'
+),
+(
+    'Curl marteau',
+    'Flexion du coude avec haltères en prise neutre pour travailler les avant-bras et biceps.',
+    'images/curl_marteau.jpg',
+    'Musculation',
+    'Débutant',
+    'Biceps, Avant-bras'
+),
+
+-- Catégorie : Gainage & Abdominaux (supplémentaire)
+(
+    'Planche latérale',
+    'Maintien du corps droit sur un avant-bras et le côté du pied, alterner les côtés.',
+    'images/planche_laterale.jpg',
+    'Gainage',
+    'Intermédiaire',
+    'Obliques, Ceinture abdominale'
+),
+(
+    'Relevés de jambes',
+    'Allongé sur le dos, soulever les jambes tendues vers le plafond en contractant les abdos.',
+    'images/releves_jambes.jpg',
+    'Abdominaux',
+    'Intermédiaire',
+    'Abdominaux inférieurs'
+),
+(
+    'Bicycle crunches',
+    'Alterner genou droit avec coude gauche et vice versa en rotation du torse.',
+    'images/bicycle_crunches.jpg',
+    'Abdominaux',
+    'Débutant',
+    'Obliques, Grand droit'
+),
+(
+    'V-ups',
+    'Soulever simultanément buste et jambes pour toucher les pieds en formant un V.',
+    'images/v_ups.jpg',
+    'Abdominaux',
+    'Avancé',
+    'Ceinture abdominale'
+),
+(
+    'Superman',
+    'Allongé ventre au sol, soulever bras et jambes simultanément pour renforcer le dos.',
+    'images/superman.jpg',
+    'Gainage',
+    'Débutant',
+    'Lombaires, Fessiers, Épaules arrière'
+),
+(
+    'Hollow body hold',
+    'Allongé sur le dos, creuser le ventre et soulever épaules et jambes tendues.',
+    'images/hollow_body.jpg',
+    'Gainage',
+    'Avancé',
+    'Ceinture abdominale profonde'
+),
+(
+    'Side plank hip dips',
+    'En planche latérale, descendre et remonter les hanches de façon contrôlée.',
+    'images/side_plank_dips.jpg',
+    'Gainage',
+    'Intermédiaire',
+    'Obliques, Ceinture abdominale'
+),
+
+-- Catégorie : Cardio & HIIT (supplémentaire)
+(
+    'High knees',
+    'Course sur place en levant les genoux haut vers la poitrine le plus rapidement possible.',
+    'images/high_knees.jpg',
+    'Cardio',
+    'Intermédiaire',
+    'Cardio, Quadriceps, Mollets'
+),
+(
+    'Butt kicks',
+    'Course sur place en ramenant les talons vers les fessiers de façon rapide.',
+    'images/butt_kicks.jpg',
+    'Cardio',
+    'Débutant',
+    'Cardio, Ischio-jambiers'
+),
+(
+    'Skaters',
+    'Sauts latéraux alternés avec flexion des jambes et balancement des bras.',
+    'images/skaters.jpg',
+    'Cardio',
+    'Intermédiaire',
+    'Cardio, Jambes, Fessiers'
+),
+(
+    'Tuck jumps',
+    'Sauts verticaux en ramenant les genoux vers la poitrine au maximum.',
+    'images/tuck_jumps.jpg',
+    'Cardio',
+    'Avancé',
+    'Cardio, Jambes, Abdominaux'
+),
+(
+    'Shadow boxing',
+    'Enchaînement de coups de poing, esquives et déplacements rapides dans le vide.',
+    'images/shadow_boxing.jpg',
+    'Cardio',
+    'Intermédiaire',
+    'Corps complet, Cardio, Épaules'
+),
+(
+    'Jumping lunges',
+    'Fentes avant alternées avec un saut explosif entre chaque répétition.',
+    'images/jumping_lunges.jpg',
+    'Cardio',
+    'Avancé',
+    'Quadriceps, Fessiers, Cardio'
+),
+(
+    'Sprint sur place',
+    'Course rapide sur place avec pompage des bras et genoux haut.',
+    'images/sprint_place.jpg',
+    'Cardio',
+    'Avancé',
+    'Cardio complet, Mollets'
+),
+(
+    'Bear crawl',
+    'Déplacement à quatre pattes en alternant mains et pieds rapidement.',
+    'images/bear_crawl.jpg',
+    'Cardio',
+    'Intermédiaire',
+    'Corps complet, Cardio, Épaules'
 );

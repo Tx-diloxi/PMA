@@ -1,319 +1,151 @@
 <?php
 session_start();
 
-// Vérifier que l'utilisateur est connecté
+//rediriger si non connecté
 if (!isset($_SESSION['user_id'])) {
     header('Location: connexion.php');
     exit;
 }
 
-// Connexion à la base de données
-require_once __DIR__ . '/../src/selectBDD.php'; // $pdo doit être défini ici
-$connexionBDD = $pdo; // adapter selon votre fichier
+//connexion à la base de données
+require_once __DIR__ . '/../src/selectBDD.php';
+$connexionBDD = $pdo;
 
-// Traitement du changement de statut
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_status') {
-    $seance_id = (int) ($_POST['seance_id'] ?? 0);
-    $new_status = $_POST['status'] ?? '';
-    $allowed_statuses = ['en_attente', 'terminee', 'ignoree'];
-    
-    if ($seance_id > 0 && in_array($new_status, $allowed_statuses)) {
-        $stmt = $pdo->prepare("UPDATE fittracker.seances SET statut = ? WHERE id = ? AND utilisateur_id = ?");
-        $stmt->execute([$new_status, $seance_id, $_SESSION['user_id']]);
-        // Redirection pour éviter la double soumission
-        header('Location: ' . $_SERVER['PHP_SELF']);
-        exit;
+//import des fonctions
+require_once __DIR__ . '/../src/functions.php';
+
+//récup l'id de l'utilisateur connecté
+$userId = (int) $_SESSION['user_id'];
+
+//initialisation des variables
+$message = '';
+$error = '';
+$seancesSemaine = [];
+$seancesParDate = [];
+$datesSemaine = [];
+$selectedDate = '';
+$seancesAujourdhui = [];
+
+//récupération des séances de la semaine courante pour l'utilisateur
+try {
+    $seancesSemaine = getSeancesSemaineCouranteParUtilisateur($connexionBDD, $userId);
+
+    $lesSceancesDuUser = getSeancesParUtilisateur($connexionBDD, $userId);
+    if (empty($lesSceancesDuUser)) {
+        $message = "Aucune séance planifiée pour la semaine courante. En cours de génération de séances pour vous...";
+        postUserN8N($userId);
+
+        // Recharger les séances après demande de génération.
+        $seancesSemaine = getSeancesSemaineCouranteParUtilisateur($connexionBDD, $userId);
+        if (!empty($seancesSemaine)) {
+            $message = "Séances générées avec succès pour la semaine courante.";
+        }
+    } else {
+        $message = "Voici vos séances planifiées pour la semaine courante.";
     }
+
+    // regrouper par date
+    foreach ($seancesSemaine as $item) {
+        $date = $item['date_programmee'] ?? '';
+        if (!isset($seancesParDate[$date])) {
+            $seancesParDate[$date] = [];
+        }
+        $seancesParDate[$date][] = $item;
+    }
+
+    $datesSemaine = array_keys($seancesParDate);
+    sort($datesSemaine);
+
+    $selectedDate = $_GET['date'] ?? '';
+    if ($selectedDate == '' || !in_array($selectedDate, $datesSemaine, true)) {
+        $selectedDate = $datesSemaine[0] ?? '';
+    }
+
+    $seancesAujourdhui = $selectedDate !== '' ? getSeancesParUtilisateurParDate($connexionBDD, $userId, $selectedDate) : [];
+} catch (Throwable $e) {
+    $error = "Une erreur est survenue lors de la récupération des séances : " . htmlspecialchars($e->getMessage());
 }
 
-// Récupération des séances de l'utilisateur
-$user_id = $_SESSION['user_id'];
-$sql = "
-    SELECT 
-        s.id AS seance_id,
-        s.date_programmee,
-        s.statut,
-        s.series,
-        s.repetitions,
-        s.repos_secondes,
-        s.notes,
-        e.id AS exercice_id,
-        e.nom AS exercice_nom,
-        e.description AS exercice_description,
-        e.image AS exercice_image,
-        e.muscles AS exercice_muscles
-    FROM fittracker.seances s
-    INNER JOIN fittracker.exercices e ON s.exercice_id = e.id
-    WHERE s.utilisateur_id = ?
-    ORDER BY s.date_programmee ASC, s.id ASC
-";
-$stmt = $pdo->prepare($sql);
-$stmt->execute([$user_id]);
-$seances = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Regroupement par date
-$grouped = [];
-foreach ($seances as $seance) {
-    $date = $seance['date_programmee'];
-    if (!isset($grouped[$date])) {
-        $grouped[$date] = [];
-    }
-    $grouped[$date][] = $seance;
-}
 ?>
 
 <!DOCTYPE html>
 <html lang="fr">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mes séances - FitTracker</title>
-    <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-
-    body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: #f4f4f4;
-        color: #333;
-        line-height: 1.6;
-        padding: 20px;
-    }
-
-    header {
-        background: #2c3e50;
-        color: white;
-        padding: 20px;
-        border-radius: 8px;
-        margin-bottom: 30px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    header h1 {
-        font-size: 1.8rem;
-    }
-
-    .logout {
-        background: #e74c3c;
-        color: white;
-        text-decoration: none;
-        padding: 8px 16px;
-        border-radius: 5px;
-        transition: background 0.3s;
-    }
-
-    .logout:hover {
-        background: #c0392b;
-    }
-
-    .day-card {
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        margin-bottom: 25px;
-        overflow: hidden;
-    }
-
-    .day-header {
-        background: #3498db;
-        color: white;
-        padding: 12px 20px;
-        font-size: 1.4rem;
-        font-weight: bold;
-    }
-
-    .day-header .date {
-        font-weight: normal;
-        font-size: 0.9rem;
-        margin-left: 10px;
-    }
-
-    .exercise-item {
-        padding: 15px 20px;
-        border-bottom: 1px solid #eee;
-        display: flex;
-        gap: 20px;
-        flex-wrap: wrap;
-    }
-
-    .exercise-item:last-child {
-        border-bottom: none;
-    }
-
-    .exercise-image {
-        width: 100px;
-        height: 100px;
-        object-fit: cover;
-        border-radius: 8px;
-        background: #f0f0f0;
-    }
-
-    .exercise-details {
-        flex: 1;
-    }
-
-    .exercise-name {
-        font-size: 1.2rem;
-        font-weight: bold;
-        margin-bottom: 5px;
-    }
-
-    .exercise-muscles {
-        color: #7f8c8d;
-        font-size: 0.9rem;
-        margin-bottom: 8px;
-    }
-
-    .exercise-description {
-        margin: 10px 0;
-        font-size: 0.9rem;
-    }
-
-    .workout-params {
-        background: #ecf0f1;
-        padding: 8px;
-        border-radius: 5px;
-        display: inline-block;
-        font-size: 0.85rem;
-        margin-top: 5px;
-    }
-
-    .status {
-        margin-top: 10px;
-        font-weight: bold;
-    }
-
-    .status-en_attente {
-        color: #f39c12;
-    }
-
-    .status-terminee {
-        color: #2ecc71;
-    }
-
-    .status-ignoree {
-        color: #95a5a6;
-    }
-
-    .status-form {
-        margin-top: 10px;
-    }
-
-    select,
-    button {
-        padding: 5px 10px;
-        border-radius: 4px;
-        border: 1px solid #ccc;
-        cursor: pointer;
-    }
-
-    button {
-        background: #3498db;
-        color: white;
-        border: none;
-    }
-
-    button:hover {
-        background: #2980b9;
-    }
-
-    footer {
-        text-align: center;
-        margin-top: 30px;
-        color: #7f8c8d;
-    }
-
-    .no-sessions {
-        background: white;
-        padding: 30px;
-        text-align: center;
-        border-radius: 8px;
-        color: #7f8c8d;
-    }
-    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mes Séances</title>
+    <link rel="stylesheet" href="assets/css/Index/style.css" />
 </head>
 
 <body>
-    <header>
-        <h1>Mes séances d'entraînement</h1>
-        <a class="logout" href="logout.php">Se déconnecter</a>
-    </header>
-
     <main>
-        <?php if (empty($grouped)): ?>
-        <div class="no-sessions">
-            <p>Aucune séance programmée pour le moment. Votre programme sera généré automatiquement lors de votre
-                inscription.</p>
-        </div>
+        <h1>Mes Séances</h1>
+
+        <p>Bienvenue sur votre dashboard. Choisissez un jour de la semaine pour afficher les séances :</p>
+
+        <?php if (!empty($error)): ?>
+        <p style="color:red; font-weight:bold;">Erreur : <?= htmlspecialchars($error) ?></p>
+        <?php elseif (!empty($message)): ?>
+        <p style="color:green; font-weight:bold;"><?= htmlspecialchars($message) ?></p>
+        <?php endif; ?>
+
+        <?php if (empty($datesSemaine)): ?>
+        <p>Aucune séance planifiée pour la semaine courante.</p>
         <?php else: ?>
-        <?php foreach ($grouped as $date => $sessions): ?>
-        <div class="day-card">
-            <div class="day-header">
-                <?php 
-                            $dateObj = new DateTime($date);
-                            $jourSemaine = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'][$dateObj->format('w')];
-                            echo htmlspecialchars($jourSemaine) . ' ' . $dateObj->format('d/m/Y');
-                        ?>
-            </div>
-            <?php foreach ($sessions as $seance): ?>
-            <div class="exercise-item">
-                <?php if (!empty($seance['exercice_image'])): ?>
-                <img class="exercise-image" src="<?= htmlspecialchars($seance['exercice_image']) ?>"
-                    alt="<?= htmlspecialchars($seance['exercice_nom']) ?>">
-                <?php else: ?>
-                <div class="exercise-image"
-                    style="background: #ddd; display: flex; align-items: center; justify-content: center;">Pas d'image
-                </div>
-                <?php endif; ?>
-                <div class="exercise-details">
-                    <div class="exercise-name"><?= htmlspecialchars($seance['exercice_nom']) ?></div>
-                    <div class="exercise-muscles"><?= htmlspecialchars($seance['exercice_muscles']) ?></div>
-                    <div class="exercise-description"><?= nl2br(htmlspecialchars($seance['exercice_description'])) ?>
-                    </div>
-                    <div class="workout-params">
-                        <?= $seance['series'] ?> séries × <?= $seance['repetitions'] ?> répétitions<br>
-                        Repos : <?= $seance['repos_secondes'] ?> secondes
-                    </div>
-                    <div class="status">
-                        Statut :
-                        <span class="status-<?= $seance['statut'] ?>">
-                            <?php 
-                                            $statuts = ['en_attente' => 'À venir', 'terminee' => 'Terminée', 'ignoree' => 'Ignorée'];
-                                            echo $statuts[$seance['statut']];
-                                        ?>
-                        </span>
-                    </div>
-                    <?php if ($seance['statut'] === 'en_attente'): ?>
-                    <form class="status-form" method="post" style="display:inline;">
-                        <input type="hidden" name="action" value="update_status">
-                        <input type="hidden" name="seance_id" value="<?= $seance['seance_id'] ?>">
-                        <select name="status">
-                            <option value="terminee">Marquer comme terminée</option>
-                            <option value="ignoree">Marquer comme ignorée</option>
-                        </select>
-                        <button type="submit">Mettre à jour</button>
-                    </form>
-                    <?php endif; ?>
-                    <?php if ($seance['notes']): ?>
-                    <div class="notes">Notes : <?= nl2br(htmlspecialchars($seance['notes'])) ?></div>
-                    <?php endif; ?>
-                </div>
-            </div>
+        <div class="jours-semaine" style="margin-bottom: 1rem;">
+            <?php foreach ($datesSemaine as $date): ?>
+            <a href="?date=<?= urlencode($date) ?>"
+                style="margin-right: 0.5rem; padding: 0.4rem 0.7rem; border: 1px solid #333; text-decoration: none; <?= $selectedDate == $date ? 'background:#d6f8d6;' : '' ?>">
+                <?= htmlspecialchars(getNomJourFr($date) . ' ' . $date) ?>
+            </a>
             <?php endforeach; ?>
         </div>
-        <?php endforeach; ?>
-        <?php endif; ?>
-    </main>
 
-    <footer>
-        <p>FitTracker - Votre coach personnel</p>
-    </footer>
+        <h2>Séances du <?= htmlspecialchars(getNomJourFr($selectedDate) . ' ' . $selectedDate) ?></h2>
+
+        <?php if (empty($seancesAujourdhui)): ?>
+        <p>Aucune séance à cette date.</p>
+        <?php else: ?>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Exercice</th>
+                    <th>Catégorie</th>
+                    <th>Difficulté</th>
+                    <th>Muscles</th>
+                    <th>Séries</th>
+                    <th>Répétitions</th>
+                    <th>Repos (s)</th>
+                    <th>Statut</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($seancesAujourdhui as $seance): ?>
+                <tr>
+                    <td><?= htmlspecialchars($seance['date_programmee'] ?? '') ?></td>
+                    <td><?= htmlspecialchars($seance['exercice_nom'] ?? '') ?></td>
+                    <td><?= htmlspecialchars($seance['exercice_categorie'] ?? '') ?></td>
+                    <td><?= htmlspecialchars($seance['exercice_difficulte'] ?? '') ?></td>
+                    <td><?= htmlspecialchars($seance['exercice_muscles'] ?? '') ?></td>
+                    <td><?= htmlspecialchars($seance['series'] ?? '') ?></td>
+                    <td><?= htmlspecialchars($seance['repetitions'] ?? '') ?></td>
+                    <td><?= htmlspecialchars($seance['repos_secondes'] ?? '') ?></td>
+                    <td><?= htmlspecialchars($seance['statut'] ?? '') ?></td>
+                    <td><?= nl2br(htmlspecialchars($seance['notes'] ?? '')) ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php endif; ?>
+        <?php endif; ?>
+
+        <div style="margin-top: 1.5rem;">
+            <a href="logout.php">Se déconnecter</a>
+        </div>
+    </main>
 </body>
 
 </html>

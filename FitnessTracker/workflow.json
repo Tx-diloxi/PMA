@@ -3,32 +3,96 @@
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "fit-inscription-webhook",
+        "path": "fit-inscription",
         "options": {}
       },
-      "id": "6b3b98cb-93e0-4266-9bdb-2ba3597b7875",
-      "name": "Webhook Trigger Inscription1",
+      "id": "2c3e53f3-c40b-4291-9605-72f3bbaad899",
+      "name": "Webhook Inscription",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [
-        -3744,
-        3600
+        -1824,
+        5040
       ],
       "webhookId": "fit-inscription-webhook"
     },
     {
       "parameters": {
+        "content": "# Workflow Programme Sportif Personnalisé\n\nCe workflow génère un programme d'entraînement intelligent en fonction du profil utilisateur (âge, sexe, poids, taille, objectif, jours disponibles, matériel, niveau).\n\n### Flux principal\n1. Webhook → Récupération profil\n2. Calculs macros & split intelligent\n3. Génération séances (périodisation hebdomadaire + FILTRAGE MATÉRIEL AMÉLIORÉ)\n4. Recommandations nutritionnelles\n5. Sauvegarde en base + résumé\n\nUtilise des Sticky Notes pour documenter chaque étape.",
+        "height": 420,
+        "width": 620,
+        "color": 7
+      },
+      "id": "dfa30c40-a575-4713-85e5-0eeb6e6dbe2f",
+      "name": "Documentation Principale",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2016,
+        4560
+      ]
+    },
+    {
+      "parameters": {
+        "content": "Calculs & Préparation\n\n- BMR / TDEE\n- Macros selon objectif\n- Split intelligent (Full Body, PPL, Upper/Lower)",
+        "height": 200,
+        "width": 300,
+        "color": 4
+      },
+      "id": "cc6b00af-fc8f-4353-acd3-ebe821794fe1",
+      "name": "Sticky Calculs",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1376,
+        4752
+      ]
+    },
+    {
+      "parameters": {
+        "content": "Switch — Jours d'entraînement\n\nRoutage selon nombre de jours disponibles et niveau",
+        "height": 180,
+        "width": 280,
+        "color": 5
+      },
+      "id": "f6c55502-d6c2-4f64-a3f9-8124841a6c08",
+      "name": "Sticky Switch",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1040,
+        4768
+      ]
+    },
+    {
+      "parameters": {
+        "content": "Génération Programme\n\n- Séances détaillées avec FILTRAGE MATÉRIEL AVANCÉ selon profil\n- Recommandations nutritionnelles\n- Résumé complet\n- Fallback bodyweight si aucun exercice compatible",
+        "height": 260,
+        "width": 360,
+        "color": 6
+      },
+      "id": "379bfa74-e16a-4509-85ab-f750ee103269",
+      "name": "Sticky Génération",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        4736
+      ]
+    },
+    {
+      "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT id, pseudo, age, sexe, poids, taille, objectif, jours_disponibilite, materiel , date_fin, niveau\nFROM fittracker.utilisateurs\nWHERE id = {{ $json.body.user_id }}",
+        "query": "SELECT id, pseudo, age, sexe, poids, taille, objectif, jours_disponibilite, materiel, date_fin, niveau FROM fittracker.utilisateurs WHERE id = {{ $json.body.user_id }}",
         "options": {}
       },
-      "id": "335b81cd-556e-4db1-aaae-ce79d4f5b489",
-      "name": "Récup Infos Utilisateur",
+      "id": "3bbc9f25-08a1-4a7f-8ee9-0b5306af114a",
+      "name": "Récup Infos Utilisateur1",
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2,
       "position": [
-        -3520,
-        3600
+        -1600,
+        5040
       ],
       "credentials": {
         "mySql": {
@@ -43,13 +107,13 @@
         "query": "SELECT id, nom, muscles, difficulte, categorie FROM fittracker.exercices",
         "options": {}
       },
-      "id": "9be3294c-aa08-4223-8c47-114055448f52",
-      "name": "Récup Liste Exercices",
+      "id": "05297690-6389-412f-92bb-c60824d00606",
+      "name": "Récup Liste Exercices1",
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2,
       "position": [
-        -3296,
-        3600
+        -1376,
+        5040
       ],
       "credentials": {
         "mySql": {
@@ -60,15 +124,15 @@
     },
     {
       "parameters": {
-        "jsCode": "let user = $('Récup Infos Utilisateur').first().json;\nlet exercices = $('Récup Liste Exercices').all().map(e => e.json);\n\nif (!user.age || !user.poids || !user.taille || !user.jours_disponibilite || !user.date_fin) {\n  throw new Error('Données utilisateur incomplètes : age, poids, taille, jours_disponibilite ou date_fin manquant');\n}\n\nlet bmr = (user.sexe === 'Homme')\n  ? (10 * user.poids) + (6.25 * user.taille) - (5 * user.age) + 5\n  : (10 * user.poids) + (6.25 * user.taille) - (5 * user.age) - 161;\n\nlet tdee = bmr * 1.4;\nlet calObj = tdee;\n\nswitch (user.objectif) {\n  case 'Perte de poids':             calObj = tdee * 0.80; break;\n  case 'Prise de masse':             calObj = tdee * 1.15; break;\n  case 'Restructuration corporelle': calObj = tdee * 0.95; break;\n  default:                           calObj = tdee; break;\n}\n\nconst now = new Date();\nconst jourSemaine = now.getDay();\nconst debutAnnee = new Date(now.getFullYear(), 0, 1);\nconst numSemaine = Math.ceil(((now - debutAnnee) / 86400000 + debutAnnee.getDay() + 1) / 7);\n\nconst phases = ['montee', 'pic', 'decharge'];\nconst phaseHebdo = phases[numSemaine % 3];\n\nconst jours = user.jours_disponibilite.split(',').length;\nlet splitSelectionne;\nif (jours <= 2)       splitSelectionne = 'Full Body';\nelse if (jours === 3) splitSelectionne = 'Push / Pull / Legs';\nelse if (jours <= 5)  splitSelectionne = 'Upper / Lower';\nelse                  splitSelectionne = 'PPL 6 jours';\n\nconst listeExercicesDetails = exercices.map(e => `${e.nom} [${e.muscles}] (${e.difficulte})`).join(' | ');\nconst listeExercicesNoms = exercices.map(e => e.nom).join(', ');\n\nreturn {\n  json: {\n    ...user,\n    liste_exercices_dispo: listeExercicesNoms,\n    liste_exercices_details: listeExercicesDetails,\n    calc_calories:  Math.round(calObj),\n    calc_proteines: Math.round(user.poids * (user.objectif.includes('Restructuration') ? 2.2 : 2)),\n    calc_lipides:   Math.round(user.poids * 0.9),\n    calc_glucides:  Math.round((calObj - (user.poids * 2 * 4) - (user.poids * 0.9 * 9)) / 4),\n    jour_semaine:   jourSemaine,\n    num_semaine:    numSemaine,\n    phase_hebdo:    phaseHebdo,\n    split_selectionne: splitSelectionne,\n    exercices_list: exercices\n  }\n};"
+        "jsCode": "let user = $('Récup Infos Utilisateur1').first().json;\nlet exercices = $('Récup Liste Exercices1').all().map(e => e.json);\n\nif (!user.age || !user.poids || !user.taille || !user.jours_disponibilite || !user.date_fin) {\n throw new Error('Données utilisateur incomplètes : age, poids, taille, jours_disponibilite ou date_fin manquant');\n}\n\nlet bmr = (user.sexe === 'Homme')\n ? (10 * user.poids) + (6.25 * user.taille) - (5 * user.age) + 5\n : (10 * user.poids) + (6.25 * user.taille) - (5 * user.age) - 161;\n\nlet tdee = bmr * 1.4;\nlet calObj = tdee;\n\nswitch (user.objectif) {\n case 'Perte de poids': calObj = tdee * 0.80; break;\n case 'Prise de masse': calObj = tdee * 1.15; break;\n case 'Restructuration corporelle': calObj = tdee * 0.95; break;\n default: calObj = tdee; break;\n}\n\nconst now = new Date();\nconst jourSemaine = now.getDay();\nconst debutAnnee = new Date(now.getFullYear(), 0, 1);\nconst numSemaine = Math.ceil(((now - debutAnnee) / 86400000 + debutAnnee.getDay() + 1) / 7);\n\nconst phases = ['montee', 'pic', 'decharge'];\nconst phaseHebdo = phases[numSemaine % 3];\n\nconst jours = user.jours_disponibilite.split(',').length;\nlet splitSelectionne;\nif (jours <= 2) splitSelectionne = 'Full Body';\nelse if (jours === 3) splitSelectionne = 'Push / Pull / Legs';\nelse if (jours <= 5) splitSelectionne = 'Upper / Lower';\nelse splitSelectionne = 'PPL 6 jours';\n\nconst listeExercicesDetails = exercices.map(e => `${e.nom} [${e.muscles}] (${e.difficulte})`).join(' | ');\nconst listeExercicesNoms = exercices.map(e => e.nom).join(', ');\n\nreturn {\n json: {\n ...user,\n liste_exercices_dispo: listeExercicesNoms,\n liste_exercices_details: listeExercicesDetails,\n calc_calories: Math.round(calObj),\n calc_proteines: Math.round(user.poids * (user.objectif.includes('Restructuration') ? 2.2 : 2)),\n calc_lipides: Math.round(user.poids * 0.9),\n calc_glucides: Math.round((calObj - (user.poids * 2 * 4) - (user.poids * 0.9 * 9)) / 4),\n jour_semaine: jourSemaine,\n num_semaine: numSemaine,\n phase_hebdo: phaseHebdo,\n split_selectionne: splitSelectionne,\n exercices_list: exercices\n }\n};"
       },
-      "id": "e74d3853-6073-4a57-b3f9-c55613f97ede",
-      "name": "Calculs & Préparation",
+      "id": "51ffcdb0-39ff-46b9-8256-5d41477dcf53",
+      "name": "Calculs & Préparation1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3072,
-        3600
+        -1152,
+        5040
       ]
     },
     {
@@ -167,26 +231,26 @@
         },
         "options": {}
       },
-      "id": "91c1cf0e-21d6-48cc-88c8-80c27c50441d",
-      "name": "Switch — Jours d'entraînement",
+      "id": "1365bc37-deb2-431b-af33-1c6a8e9f508f",
+      "name": "Switch — Jours d'entraînement1",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        -2848,
-        3568
+        -928,
+        5008
       ]
     },
     {
       "parameters": {
-        "jsCode": "// --- Récupération des données\nconst user = $('Récup Infos Utilisateur').first().json;\nconst exercices = $('Récup Liste Exercices').all().map(e => e.json);\n\n// --- Vérification des données\nif (!user.age || !user.poids || !user.taille || !user.jours_disponibilite || !user.date_fin) {\n  throw new Error('Données utilisateur incomplètes');\n}\n\n// --- Normalisation des champs texte\nconst niveau = (user.niveau || 'Débutant').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');\nconst objectif = user.objectif;\nconst materiel = (user.materiel || 'Rien').toLowerCase();\n\n// --- Calcul des macros\nlet bmr = (user.sexe === 'Homme')\n  ? (10 * user.poids) + (6.25 * user.taille) - (5 * user.age) + 5\n  : (10 * user.poids) + (6.25 * user.taille) - (5 * user.age) - 161;\nlet tdee = bmr * 1.4;\nlet calObj = tdee;\nswitch (objectif) {\n  case 'Perte de poids':             calObj = tdee * 0.80; break;\n  case 'Prise de masse':             calObj = tdee * 1.15; break;\n  case 'Restructuration corporelle': calObj = tdee * 0.95; break;\n  default:                           calObj = tdee; break;\n}\n\n// --- Données temporelles\nconst now = new Date();\nconst jourSemaine = now.getDay();\nconst debutAnnee = new Date(now.getFullYear(), 0, 1);\nconst numSemaine = Math.ceil(((now - debutAnnee) / 86400000 + debutAnnee.getDay() + 1) / 7);\nconst phases = ['montee', 'pic', 'decharge'];\nconst phaseHebdo = phases[numSemaine % 3];\n\n// --- Analyse des jours disponibles\nconst DAY_NAMES_FR = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];\nconst DAY_INDEX = {};\nDAY_NAMES_FR.forEach((d, i) => { DAY_INDEX[d] = i; });\n\nconst joursDispoStr = user.jours_disponibilite.split(',').map(j => j.trim());\nconst joursDispoIndex = joursDispoStr.map(j => DAY_INDEX[j]).filter(i => i !== undefined);\nconst nbJours = joursDispoIndex.length;\n\n// Détection des jours consécutifs\nlet consecutifMax = 1;\nlet current = 1;\nfor (let i = 1; i < joursDispoIndex.length; i++) {\n  if (joursDispoIndex[i] === joursDispoIndex[i-1] + 1 ||\n      (joursDispoIndex[i-1] === 6 && joursDispoIndex[i] === 0)) {\n    current++;\n    consecutifMax = Math.max(consecutifMax, current);\n  } else {\n    current = 1;\n  }\n}\n\n// --- Sélection du split intelligent\nlet splitSelectionne;\nlet sessionTypesCycle = [];\n\nif (nbJours <= 2) {\n  splitSelectionne = 'Full Body';\n  sessionTypesCycle = ['fullbody'];\n} else if (nbJours === 3) {\n  if (niveau === 'debutant' || consecutifMax >= 3) {\n    splitSelectionne = 'Full Body';\n    sessionTypesCycle = ['fullbody'];\n  } else {\n    splitSelectionne = 'Push / Pull / Legs';\n    sessionTypesCycle = ['push', 'pull', 'legs'];\n  }\n} else if (nbJours === 4) {\n  splitSelectionne = 'Upper / Lower';\n  sessionTypesCycle = ['upper', 'lower', 'upper', 'lower'];\n} else { // 5 ou 6 jours\n  if (consecutifMax > 3 && niveau !== 'avance') {\n    splitSelectionne = 'Full Body (adapté)';\n    sessionTypesCycle = ['fullbody'];\n  } else {\n    splitSelectionne = 'PPL 6 jours';\n    sessionTypesCycle = ['push', 'pull', 'legs', 'push', 'pull', 'legs'];\n  }\n}\n\n// --- Nombre d'exercices selon split et niveau\nconst NB_EXERCICES = {\n  fullbody: niveau === 'debutant' ? 5 : 6,\n  push:     niveau === 'debutant' ? 4 : 5,\n  pull:     niveau === 'debutant' ? 4 : 5,\n  legs:     niveau === 'debutant' ? 4 : 5,\n  upper:    niveau === 'debutant' ? 5 : 6,\n  lower:    niveau === 'debutant' ? 4 : 5\n};\n\n// --- Séries / répétitions\nlet series, reps;\nswitch (objectif) {\n  case 'Prise de masse':\n    series = niveau === 'debutant' ? 3 : 4;\n    reps   = niveau === 'debutant' ? 8 : 6;\n    break;\n  case 'Perte de poids':\n    series = niveau === 'debutant' ? 3 : 4;\n    reps   = 15;\n    break;\n  default:\n    series = niveau === 'debutant' ? 3 : 4;\n    reps   = 12;\n}\n\nlet reposSecondes;\nswitch (objectif) {\n  case 'Prise de masse':             reposSecondes = 180; break;\n  case 'Restructuration corporelle': reposSecondes = 90;  break;\n  case 'Perte de poids':             reposSecondes = 45;  break;\n  default:                           reposSecondes = 60;\n}\nif (niveau === 'debutant') reposSecondes += 30;\n\n// --- Périodisation hebdomadaire\nif (phaseHebdo === 'montee') {\n  series = Math.min(series + 1, 5);\n  reps   = Math.max(reps - 2, 5);\n} else if (phaseHebdo === 'decharge') {\n  series = Math.max(series - 1, 2);\n  reps   = Math.min(reps + 3, 20);\n  reposSecondes = Math.round(reposSecondes * 0.75);\n}\n\n// --- Dates de planification (max 30 jours)\nconst dateFin = new Date(user.date_fin);\nconst today = new Date();\ntoday.setHours(0,0,0,0);\nconst maxDays = 30;\nconst limitDate = new Date(today);\nlimitDate.setDate(today.getDate() + maxDays);\nconst endDate = dateFin < limitDate ? dateFin : limitDate;\n\n// Fonction d'ajustement par semaine\nfunction adjustByWeek(date, baseSeries, baseReps) {\n  const diffDays = Math.floor((date - today) / (1000 * 3600 * 24));\n  const weekNum = Math.floor(diffDays / 7) + 1;\n  let seriesAdj = baseSeries, repsAdj = baseReps;\n  if (weekNum === 2) seriesAdj = Math.min(baseSeries + 1, 5);\n  else if (weekNum === 3) repsAdj = Math.min(baseReps + 2, 20);\n  else if (weekNum === 4) { seriesAdj = Math.min(baseSeries + 1, 5); repsAdj = Math.min(baseReps + 2, 20); }\n  return { series: seriesAdj, reps: repsAdj };\n}\n\n// --- Génération des dates\nconst datesToSchedule = [];\nlet currentDate = new Date(today);\nwhile (currentDate <= endDate) {\n  if (joursDispoIndex.includes(currentDate.getDay())) {\n    datesToSchedule.push(new Date(currentDate));\n  }\n  currentDate.setDate(currentDate.getDate() + 1);\n}\n\n// --- Assignation des types de séances\nlet assignedSessionTypes;\nif (sessionTypesCycle.length === 1) {\n  assignedSessionTypes = datesToSchedule.map(() => sessionTypesCycle[0]);\n} else {\n  assignedSessionTypes = datesToSchedule.map((_, idx) => sessionTypesCycle[idx % sessionTypesCycle.length]);\n}\n\n// --- Filtrage des exercices\nfunction matchMateriel(exo) {\n  const cat = (exo.categorie || '').toLowerCase();\n  if (materiel === 'rien') {\n    // Seuls les exercices sans équipement : Gainage, Abdominaux, Cardio\n    return ['gainage', 'abdominaux', 'cardio'].includes(cat);\n  }\n  if (materiel === 'haltères') {\n    const nom = (exo.nom || '').toLowerCase();\n    return !nom.includes('barre') && !nom.includes('machine') && !nom.includes('poulie');\n  }\n  return true; // 'salle complète' ou autre\n}\n\nlet filteredExercises = exercices;\nif (niveau === 'debutant') {\n  filteredExercises = filteredExercises.filter(e => e.difficulte !== 'Avancé');\n}\nif (objectif !== 'Prise de masse') {\n  filteredExercises = filteredExercises.filter(e => e.difficulte !== 'Avancé');\n}\nfilteredExercises = filteredExercises.filter(matchMateriel);\n\n// --- Sélection des exercices par type\nfunction getExercisesByType(sessionType) {\n  let filtered = [];\n  switch (sessionType) {\n    case 'fullbody':\n      filtered = filteredExercises.filter(e => e.categorie === 'Musculation' || e.categorie === 'Gainage' || e.categorie === 'Abdominaux');\n      break;\n    case 'push':\n      filtered = filteredExercises.filter(e => e.muscles && (e.muscles.includes('Pectoraux') || e.muscles.includes('Triceps') || e.muscles.includes('Épaules')));\n      break;\n    case 'pull':\n      filtered = filteredExercises.filter(e => e.muscles && (e.muscles.includes('Dos') || e.muscles.includes('Biceps')));\n      break;\n    case 'legs':\n      filtered = filteredExercises.filter(e => e.muscles && (e.muscles.includes('Quadriceps') || e.muscles.includes('Fessiers') || e.muscles.includes('Ischio')));\n      break;\n    case 'upper':\n      filtered = filteredExercises.filter(e => e.muscles && (e.muscles.includes('Pectoraux') || e.muscles.includes('Dos') || e.muscles.includes('Épaules') || e.muscles.includes('Biceps') || e.muscles.includes('Triceps')));\n      break;\n    case 'lower':\n      filtered = filteredExercises.filter(e => e.muscles && (e.muscles.includes('Quadriceps') || e.muscles.includes('Fessiers') || e.muscles.includes('Ischio') || e.muscles.includes('Mollets')));\n      break;\n    default: filtered = [];\n  }\n  return filtered.sort(() => 0.5 - Math.random());\n}\n\nconst exerciseLists = {};\nconst typesNeeded = [...new Set(assignedSessionTypes)];\nfor (const type of typesNeeded) {\n  exerciseLists[type] = getExercisesByType(type);\n}\n\nconst pointers = {};\nfor (const type of typesNeeded) {\n  pointers[type] = 0;\n}\n\nfunction selectExercises(sessionType) {\n  const list = exerciseLists[sessionType];\n  if (!list || list.length === 0) return [];\n  const limit = NB_EXERCICES[sessionType] || 4;\n  const selected = [];\n  let pointer = pointers[sessionType];\n  for (let i = 0; i < limit; i++) {\n    selected.push(list[pointer % list.length]);\n    pointer++;\n  }\n  pointers[sessionType] = pointer % list.length;\n  return selected;\n}\n\n// --- Construction des séances et du résumé détaillé\nconst seances = [];\nconst summarySeances = []; // Pour affichage dans le résumé\n\nfor (let i = 0; i < datesToSchedule.length; i++) {\n  const date = datesToSchedule[i];\n  const type = assignedSessionTypes[i];\n  const { series: weekSeries, reps: weekReps } = adjustByWeek(date, series, reps);\n  const selectedExos = selectExercises(type);\n  if (selectedExos.length === 0) continue;\n\n  const jour = DAY_NAMES_FR[date.getDay()];\n  const exosDetails = selectedExos.map(exo => ({\n    nom: exo.nom,\n    muscles: exo.muscles,\n    series: weekSeries,\n    repetitions: weekReps,\n    repos: reposSecondes\n  }));\n\n  summarySeances.push({\n    date: date.toISOString().slice(0,10),\n    jour: jour,\n    type: type,\n    exercices: exosDetails\n  });\n\n  for (const exo of selectedExos) {\n    seances.push({\n      utilisateur_id:  user.id,\n      exercice_id:     exo.id,\n      date_programmee: date.toISOString().slice(0,10),\n      series:          weekSeries,\n      repetitions:     weekReps,\n      repos_secondes:  reposSecondes\n    });\n  }\n}\n\n// --- Recommandations nutritionnelles\nconst dailyCals = Math.round(calObj);\nconst dailyProt = Math.round(user.poids * (objectif.includes('Restructuration') ? 2.2 : 2));\nconst dailyGluc = Math.round((dailyCals - (dailyProt * 4) - (Math.round(user.poids * 0.9) * 9)) / 4);\nconst dailyLip  = Math.round(user.poids * 0.9);\n\nfunction makeMeal(mealName, type, percent) {\n  return {\n    utilisateur_id: user.id,\n    titre:          mealName,\n    description:    `Repas ${mealName} personnalisé pour ${user.pseudo}. Ajustez les portions pour atteindre vos objectifs.`,\n    type_repas:     type,\n    calories:       Math.round(dailyCals * percent),\n    proteines:      Math.round(dailyProt * percent),\n    glucides:       Math.round(dailyGluc * percent),\n    lipides:        Math.round(dailyLip  * percent)\n  };\n}\nconst recommandations = [\n  makeMeal('Petit-déjeuner', 'petit_dejeuner', 0.25),\n  makeMeal('Déjeuner',       'dejeuner',       0.35),\n  makeMeal('Dîner',          'diner',          0.30),\n  makeMeal('Collation',      'collation',      0.10)\n];\n\n// --- Batching SQL\nfunction chunkArray(array, size) {\n  const chunks = [];\n  for (let i = 0; i < array.length; i += size) chunks.push(array.slice(i, i + size));\n  return chunks;\n}\nconst BATCH_SIZE = 100;\nconst seanceBatches = chunkArray(seances, BATCH_SIZE);\nconst insertSeancesBatches = seanceBatches.map(batch => {\n  const values = batch.map(s => `(${s.utilisateur_id}, ${s.exercice_id}, '${s.date_programmee}', ${s.series}, ${s.repetitions}, ${s.repos_secondes})`).join(',\\n');\n  return { query: `INSERT INTO fittracker.seances (utilisateur_id, exercice_id, date_programmee, series, repetitions, repos_secondes) VALUES\\n${values}` };\n});\n\nlet insertRecommandationsQuery = '';\nif (recommandations.length) {\n  const values = recommandations.map(r => `(${r.utilisateur_id}, '${r.titre.replace(/'/g, \"\\\\'\")}', '${r.description.replace(/'/g, \"\\\\'\")}', '${r.type_repas}', ${r.calories}, ${r.proteines}, ${r.glucides}, ${r.lipides})`).join(',\\n');\n  insertRecommandationsQuery = `INSERT INTO fittracker.recommandations_nutrition (utilisateur_id, titre, description, type_repas, calories, proteines, glucides, lipides) VALUES\\n${values}`;\n}\n\n// --- Construction du résumé complet\nconst programmeSummary = {\n  utilisateur: user.pseudo,\n  split: splitSelectionne,\n  nb_jours: nbJours,\n  jours: joursDispoStr.join(', '),\n  niveau: user.niveau,\n  objectif: objectif,\n  phase_hebdo: phaseHebdo,\n  periode: {\n    debut: today.toISOString().slice(0,10),\n    fin: endDate.toISOString().slice(0,10),\n    nb_seances_prevues: datesToSchedule.length\n  },\n  parametres_entrainement: {\n    series_base: series,\n    repetitions_base: reps,\n    repos_secondes: reposSecondes,\n    progression: \"ajustement hebdomadaire (surcharge progressive)\"\n  },\n  details_seances: summarySeances,\n  recommandations_nutrition: recommandations.map(r => `${r.titre} : ${r.calories} kcal, ${r.proteines}g P, ${r.glucides}g G, ${r.lipides}g L`),\n  conseils: [\n    \"Échauffement : 10 minutes de cardio léger + mobilité articulaire avant chaque séance.\",\n    \"Hydratation : au moins 1,5L d'eau par jour, plus pendant l'effort.\",\n    \"Respectez les temps de repos pour optimiser la récupération.\",\n    \"Pour progresser, essayez d'augmenter la charge ou les répétitions chaque semaine (surcharge progressive).\",\n    \"En cas de douleur, adaptez ou consultez un professionnel.\"\n  ]\n};\n\n// --- Retour des trois actions avec le résumé attaché à la première\nreturn [\n  { json: { action: 'update_macros', utilisateur_id: user.id, calories: dailyCals, proteines: dailyProt, glucides: dailyGluc, lipides: dailyLip, summary: programmeSummary } },\n  { json: { action: 'insert_seances', seances: seances, insertSeancesBatches: insertSeancesBatches, utilisateur_id: user.id, startDate: today.toISOString().slice(0,10), endDate: endDate.toISOString().slice(0,10) } },\n  { json: { action: 'insert_recommandations', recommandations: recommandations, insertRecommandationsQuery: insertRecommandationsQuery } }\n];"
+        "jsCode": "// --- Récupération des données\nconst user = $('Récup Infos Utilisateur1').first().json;\nconst exercices = $('Récup Liste Exercices1').all().map(e => e.json);\n\n// --- Vérification des données\nif (!user.age || !user.poids || !user.taille || !user.jours_disponibilite || !user.date_fin) {\n throw new Error('Données utilisateur incomplètes');\n}\n\n// --- Normalisation des champs texte\nconst niveau = (user.niveau || 'Débutant').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');\nconst objectif = user.objectif;\nconst materiel = (user.materiel || 'Rien').toLowerCase();\n\n// --- Calcul des macros\nlet bmr = (user.sexe === 'Homme')\n ? (10 * user.poids) + (6.25 * user.taille) - (5 * user.age) + 5\n : (10 * user.poids) + (6.25 * user.taille) - (5 * user.age) - 161;\nlet tdee = bmr * 1.4;\nlet calObj = tdee;\nswitch (objectif) {\n case 'Perte de poids': calObj = tdee * 0.80; break;\n case 'Prise de masse': calObj = tdee * 1.15; break;\n case 'Restructuration corporelle': calObj = tdee * 0.95; break;\n default: calObj = tdee; break;\n}\n\n// --- Données temporelles\nconst now = new Date();\nconst jourSemaine = now.getDay();\nconst debutAnnee = new Date(now.getFullYear(), 0, 1);\nconst numSemaine = Math.ceil(((now - debutAnnee) / 86400000 + debutAnnee.getDay() + 1) / 7);\nconst phases = ['montee', 'pic', 'decharge'];\nconst phaseHebdo = phases[numSemaine % 3];\n\n// --- Analyse des jours disponibles\nconst DAY_NAMES_FR = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];\nconst DAY_INDEX = {};\nDAY_NAMES_FR.forEach((d, i) => { DAY_INDEX[d] = i; });\n\nconst joursDispoStr = user.jours_disponibilite.split(',').map(j => j.trim());\nconst joursDispoIndex = joursDispoStr.map(j => DAY_INDEX[j]).filter(i => i !== undefined);\nconst nbJours = joursDispoIndex.length;\n\n// Détection des jours consécutifs\nlet consecutifMax = 1;\nlet current = 1;\nfor (let i = 1; i < joursDispoIndex.length; i++) {\n if (joursDispoIndex[i] === joursDispoIndex[i-1] + 1 ||\n (joursDispoIndex[i-1] === 6 && joursDispoIndex[i] === 0)) {\n current++;\n consecutifMax = Math.max(consecutifMax, current);\n } else {\n current = 1;\n }\n}\n\n// --- Sélection du split intelligent\nlet splitSelectionne;\nlet sessionTypesCycle = [];\n\nif (nbJours <= 2) {\n splitSelectionne = 'Full Body';\n sessionTypesCycle = ['fullbody'];\n} else if (nbJours === 3) {\n if (niveau === 'debutant' || consecutifMax >= 3) {\n splitSelectionne = 'Full Body';\n sessionTypesCycle = ['fullbody'];\n } else {\n splitSelectionne = 'Push / Pull / Legs';\n sessionTypesCycle = ['push', 'pull', 'legs'];\n }\n} else if (nbJours === 4) {\n splitSelectionne = 'Upper / Lower';\n sessionTypesCycle = ['upper', 'lower', 'upper', 'lower'];\n} else { // 5 ou 6 jours\n if (consecutifMax > 3 && niveau !== 'avance') {\n splitSelectionne = 'Full Body (adapté)';\n sessionTypesCycle = ['fullbody'];\n } else {\n splitSelectionne = 'PPL 6 jours';\n sessionTypesCycle = ['push', 'pull', 'legs', 'push', 'pull', 'legs'];\n }\n}\n\n// --- Nombre d'exercices selon split et niveau\nconst NB_EXERCICES = {\n fullbody: niveau === 'debutant' ? 5 : 6,\n push: niveau === 'debutant' ? 4 : 5,\n pull: niveau === 'debutant' ? 4 : 5,\n legs: niveau === 'debutant' ? 4 : 5,\n upper: niveau === 'debutant' ? 5 : 6,\n lower: niveau === 'debutant' ? 4 : 5\n};\n\n// --- Séries / répétitions\nlet series, reps;\nswitch (objectif) {\n case 'Prise de masse':\n series = niveau === 'debutant' ? 3 : 4;\n reps = niveau === 'debutant' ? 8 : 6;\n break;\n case 'Perte de poids':\n series = niveau === 'debutant' ? 3 : 4;\n reps = 15;\n break;\n default:\n series = niveau === 'debutant' ? 3 : 4;\n reps = 12;\n}\n\nlet reposSecondes;\nswitch (objectif) {\n case 'Prise de masse': reposSecondes = 180; break;\n case 'Restructuration corporelle': reposSecondes = 90; break;\n case 'Perte de poids': reposSecondes = 45; break;\n default: reposSecondes = 60;\n}\nif (niveau === 'debutant') reposSecondes += 30;\n\n// --- Périodisation hebdomadaire\nif (phaseHebdo === 'montee') {\n series = Math.min(series + 1, 5);\n reps = Math.max(reps - 2, 5);\n} else if (phaseHebdo === 'decharge') {\n series = Math.max(series - 1, 2);\n reps = Math.min(reps + 3, 20);\n reposSecondes = Math.round(reposSecondes * 0.75);\n}\n\n// --- Dates de planification (max 30 jours)\nconst dateFin = new Date(user.date_fin);\nconst today = new Date();\ntoday.setHours(0,0,0,0);\nconst maxDays = 30;\nconst limitDate = new Date(today);\nlimitDate.setDate(today.getDate() + maxDays);\nconst endDate = dateFin < limitDate ? dateFin : limitDate;\n\n// Fonction d'ajustement par semaine\nfunction adjustByWeek(date, baseSeries, baseReps) {\n const diffDays = Math.floor((date - today) / (1000 * 3600 * 24));\n const weekNum = Math.floor(diffDays / 7) + 1;\n let seriesAdj = baseSeries, repsAdj = baseReps;\n if (weekNum === 2) seriesAdj = Math.min(baseSeries + 1, 5);\n else if (weekNum === 3) repsAdj = Math.min(baseReps + 2, 20);\n else if (weekNum === 4) { seriesAdj = Math.min(baseSeries + 1, 5); repsAdj = Math.min(baseReps + 2, 20); }\n return { series: seriesAdj, reps: repsAdj };\n}\n\n// --- Génération des dates\nconst datesToSchedule = [];\nlet currentDate = new Date(today);\nwhile (currentDate <= endDate) {\n if (joursDispoIndex.includes(currentDate.getDay())) {\n datesToSchedule.push(new Date(currentDate));\n }\n currentDate.setDate(currentDate.getDate() + 1);\n}\n\n// --- Assignation des types de séances\nlet assignedSessionTypes;\nif (sessionTypesCycle.length === 1) {\n assignedSessionTypes = datesToSchedule.map(() => sessionTypesCycle[0]);\n} else {\n assignedSessionTypes = datesToSchedule.map((_, idx) => sessionTypesCycle[idx % sessionTypesCycle.length]);\n}\n\n// --- FILTRAGE MATÉRIEL AMÉLIORÉ selon profil utilisateur\nfunction matchMateriel(exo, userMaterielStr) {\n  const mats = (userMaterielStr || 'Rien').toLowerCase().split(',').map(m => m.trim()).filter(Boolean);\n  const nom = (exo.nom || '').toLowerCase();\n  const cat = (exo.categorie || '').toLowerCase();\n\n  // Salle de sport = tout autorisé\n  if (mats.includes('salle de sport')) return true;\n\n  // Rien ou Tapis de sol = uniquement bodyweight\n  if (mats.some(m => ['rien', 'tapis de sol'].includes(m))) {\n    const bodyweightCats = ['gainage', 'abdominaux', 'cardio', 'musculation'];\n    const bodyweightKeywords = ['pompes', 'squats', 'fentes', 'planche', 'crunchs', 'burpees', 'jumping', 'mountain', 'high knees', 'butt kicks', 'skaters', 'superman'];\n    return (bodyweightCats.includes(cat) || bodyweightKeywords.some(kw => nom.includes(kw))) &&\n           !nom.includes('haltère') && !nom.includes('barre') && !nom.includes('machine') && !nom.includes('poulie') && !nom.includes('traction');\n  }\n\n  let compatible = false;\n\n  // Haltères\n  if (mats.includes('haltères')) {\n    compatible = compatible || nom.includes('haltère') || cat === 'musculation' ||\n                 nom.includes('curl') || nom.includes('développ') || nom.includes('élévation') || nom.includes('flyes');\n  }\n\n  // Barre de traction\n  if (mats.includes('barre de traction')) {\n    compatible = compatible || nom.includes('traction') || nom.includes('pull') || nom.includes('dips');\n  }\n\n  // Corde à sauter\n  if (mats.includes('corde à sauter')) {\n    compatible = compatible || cat === 'cardio' || nom.includes('corde') || nom.includes('jumping');\n  }\n\n  return compatible;\n}\n\nlet filteredExercises = exercices;\n\n// Filtrage niveau / objectif (conservé)\nif (niveau === 'debutant') {\n  filteredExercises = filteredExercises.filter(e => e.difficulte !== 'Avancé');\n}\nif (objectif !== 'Prise de masse') {\n  filteredExercises = filteredExercises.filter(e => e.difficulte !== 'Avancé');\n}\n\n// Filtrage matériel selon profil (AMÉLIORÉ)\nfilteredExercises = filteredExercises.filter(exo => matchMateriel(exo, user.materiel));\n\n// Fallback robuste si aucun exercice compatible avec le matériel\nif (filteredExercises.length === 0) {\n  filteredExercises = exercices.filter(e => {\n    const cat = (e.categorie || '').toLowerCase();\n    return ['gainage', 'abdominaux', 'cardio'].includes(cat);\n  });\n}\n\n// --- Sélection des exercices par type\nfunction getExercisesByType(sessionType) {\n let filtered = [];\n switch (sessionType) {\n case 'fullbody':\n filtered = filteredExercises.filter(e => e.categorie === 'Musculation' || e.categorie === 'Gainage' || e.categorie === 'Abdominaux');\n break;\n case 'push':\n filtered = filteredExercises.filter(e => e.muscles && (e.muscles.includes('Pectoraux') || e.muscles.includes('Triceps') || e.muscles.includes('Épaules')));\n break;\n case 'pull':\n filtered = filteredExercises.filter(e => e.muscles && (e.muscles.includes('Dos') || e.muscles.includes('Biceps')));\n break;\n case 'legs':\n filtered = filteredExercises.filter(e => e.muscles && (e.muscles.includes('Quadriceps') || e.muscles.includes('Fessiers') || e.muscles.includes('Ischio')));\n break;\n case 'upper':\n filtered = filteredExercises.filter(e => e.muscles && (e.muscles.includes('Pectoraux') || e.muscles.includes('Dos') || e.muscles.includes('Épaules') || e.muscles.includes('Biceps') || e.muscles.includes('Triceps')));\n break;\n case 'lower':\n filtered = filteredExercises.filter(e => e.muscles && (e.muscles.includes('Quadriceps') || e.muscles.includes('Fessiers') || e.muscles.includes('Ischio') || e.muscles.includes('Mollets')));\n break;\n default: filtered = [];\n }\n return filtered.sort(() => 0.5 - Math.random());\n}\n\nconst exerciseLists = {};\nconst typesNeeded = [...new Set(assignedSessionTypes)];\nfor (const type of typesNeeded) {\n exerciseLists[type] = getExercisesByType(type);\n}\n\nconst pointers = {};\nfor (const type of typesNeeded) {\n pointers[type] = 0;\n}\n\nfunction selectExercises(sessionType) {\n const list = exerciseLists[sessionType];\n if (!list || list.length === 0) return [];\n const limit = NB_EXERCICES[sessionType] || 4;\n const selected = [];\n let pointer = pointers[sessionType];\n for (let i = 0; i < limit; i++) {\n selected.push(list[pointer % list.length]);\n pointer++;\n }\n pointers[sessionType] = pointer % list.length;\n return selected;\n}\n\n// --- Construction des séances et du résumé détaillé\nconst seances = [];\nconst summarySeances = [];\n\nfor (let i = 0; i < datesToSchedule.length; i++) {\n const date = datesToSchedule[i];\n const type = assignedSessionTypes[i];\n const { series: weekSeries, reps: weekReps } = adjustByWeek(date, series, reps);\n const selectedExos = selectExercises(type);\n if (selectedExos.length === 0) continue;\n\n const jour = DAY_NAMES_FR[date.getDay()];\n const exosDetails = selectedExos.map(exo => ({\n nom: exo.nom,\n muscles: exo.muscles,\n series: weekSeries,\n repetitions: weekReps,\n repos: reposSecondes\n }));\n\n summarySeances.push({\n date: date.toISOString().slice(0,10),\n jour: jour,\n type: type,\n exercices: exosDetails\n });\n\n for (const exo of selectedExos) {\n seances.push({\n utilisateur_id: user.id,\n exercice_id: exo.id,\n date_programmee: date.toISOString().slice(0,10),\n series: weekSeries,\n repetitions: weekReps,\n repos_secondes: reposSecondes\n });\n }\n}\n\n// --- Recommandations nutritionnelles\nconst dailyCals = Math.round(calObj);\nconst dailyProt = Math.round(user.poids * (objectif.includes('Restructuration') ? 2.2 : 2));\nconst dailyGluc = Math.round((dailyCals - (dailyProt * 4) - (Math.round(user.poids * 0.9) * 9)) / 4);\nconst dailyLip = Math.round(user.poids * 0.9);\n\nfunction makeMeal(mealName, type, percent) {\n return {\n utilisateur_id: user.id,\n titre: mealName,\n description: `Repas ${mealName} personnalisé pour ${user.pseudo}. Ajustez les portions pour atteindre vos objectifs.`,\n type_repas: type,\n calories: Math.round(dailyCals * percent),\n proteines: Math.round(dailyProt * percent),\n glucides: Math.round(dailyGluc * percent),\n lipides: Math.round(dailyLip * percent)\n };\n}\nconst recommandations = [\n makeMeal('Petit-déjeuner', 'petit_dejeuner', 0.25),\n makeMeal('Déjeuner', 'dejeuner', 0.35),\n makeMeal('Dîner', 'diner', 0.30),\n makeMeal('Collation', 'collation', 0.10)\n];\n\n// --- Batching SQL\nfunction chunkArray(array, size) {\n const chunks = [];\n for (let i = 0; i < array.length; i += size) chunks.push(array.slice(i, i + size));\n return chunks;\n}\nconst BATCH_SIZE = 100;\nconst seanceBatches = chunkArray(seances, BATCH_SIZE);\nconst insertSeancesBatches = seanceBatches.map(batch => {\n const values = batch.map(s => `(${s.utilisateur_id}, ${s.exercice_id}, '${s.date_programmee}', ${s.series}, ${s.repetitions}, ${s.repos_secondes})`).join(',\\n');\n return { query: `INSERT INTO fittracker.seances (utilisateur_id, exercice_id, date_programmee, series, repetitions, repos_secondes) VALUES\\n${values}` };\n});\n\nlet insertRecommandationsQuery = '';\nif (recommandations.length) {\n const values = recommandations.map(r => `(${r.utilisateur_id}, '${r.titre.replace(/'/g, \"\\\\'\")}', '${r.description.replace(/'/g, \"\\\\'\")}', '${r.type_repas}', ${r.calories}, ${r.proteines}, ${r.glucides}, ${r.lipides})`).join(',\\n');\n insertRecommandationsQuery = `INSERT INTO fittracker.recommandations_nutrition (utilisateur_id, titre, description, type_repas, calories, proteines, glucides, lipides) VALUES\\n${values}`;\n}\n\n// --- Construction du résumé complet\nconst programmeSummary = {\n utilisateur: user.pseudo,\n split: splitSelectionne,\n nb_jours: nbJours,\n jours: joursDispoStr.join(', '),\n niveau: user.niveau,\n objectif: objectif,\n materiel_utilise: user.materiel,\n phase_hebdo: phaseHebdo,\n periode: {\n debut: today.toISOString().slice(0,10),\n fin: endDate.toISOString().slice(0,10),\n nb_seances_prevues: datesToSchedule.length\n },\n parametres_entrainement: {\n series_base: series,\n repetitions_base: reps,\n repos_secondes: reposSecondes,\n progression: \"ajustement hebdomadaire (surcharge progressive)\"\n },\n details_seances: summarySeances,\n recommandations_nutrition: recommandations.map(r => `${r.titre} : ${r.calories} kcal, ${r.proteines}g P, ${r.glucides}g G, ${r.lipides}g L`),\n conseils: [\n \"Échauffement : 10 minutes de cardio léger + mobilité articulaire avant chaque séance.\",\n \"Hydratation : au moins 1,5L d'eau par jour, plus pendant l'effort.\",\n \"Respectez les temps de repos pour optimiser la récupération.\",\n \"Pour progresser, essayez d'augmenter la charge ou les répétitions chaque semaine (surcharge progressive).\",\n \"En cas de douleur, adaptez ou consultez un professionnel.\"\n ]\n};\n\n// --- Retour des trois actions avec le résumé attaché à la première\nreturn [\n { json: { action: 'update_macros', utilisateur_id: user.id, calories: dailyCals, proteines: dailyProt, glucides: dailyGluc, lipides: dailyLip, summary: programmeSummary } },\n { json: { action: 'insert_seances', seances: seances, insertSeancesBatches: insertSeancesBatches, utilisateur_id: user.id, startDate: today.toISOString().slice(0,10), endDate: endDate.toISOString().slice(0,10) } },\n { json: { action: 'insert_recommandations', recommandations: recommandations, insertRecommandationsQuery: insertRecommandationsQuery } }\n];"
       },
-      "id": "9a820ba0-9bf6-48bf-83a1-425c68f2cc43",
-      "name": "Génération Programme",
+      "id": "c8fd748d-e79d-4a87-b9af-ab5f2096f43b",
+      "name": "Génération Programme1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2624,
-        3600
+        -704,
+        5040
       ]
     },
     {
@@ -263,13 +327,13 @@
         },
         "options": {}
       },
-      "id": "2a2acd44-8a2a-4bc7-94e4-8c6f56dc881e",
-      "name": "Switch — Router Actions",
+      "id": "9b87a40a-2c1c-4d3f-bf74-943bccaa317d",
+      "name": "Switch — Router Actions1",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        -2400,
-        3584
+        -480,
+        5024
       ]
     },
     {
@@ -278,13 +342,13 @@
         "query": "{{ $json.query }}",
         "options": {}
       },
-      "id": "92d56962-e941-49f4-99e6-34e9c2dd4b7b",
-      "name": "Update Macros Utilisateur",
+      "id": "e2149d09-b200-4b55-b42b-a9b3b771f7e4",
+      "name": "Update Macros Utilisateur1",
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2,
       "position": [
-        -1728,
-        3408
+        192,
+        4848
       ],
       "credentials": {
         "mySql": {
@@ -299,13 +363,13 @@
         "query": "DELETE FROM fittracker.seances WHERE utilisateur_id = {{ $json.utilisateur_id }}",
         "options": {}
       },
-      "id": "6a5524bc-afcc-43a9-b864-2648b44e1a60",
-      "name": "Delete Existing Séances",
+      "id": "8b834a41-3da1-4ade-9c4d-342b17624705",
+      "name": "Delete Existing Séances1",
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2,
       "position": [
-        -2176,
-        3600
+        -256,
+        5040
       ],
       "credentials": {
         "mySql": {
@@ -316,15 +380,15 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $('Switch — Router Actions').item.json;\nconst batches = data.insertSeancesBatches;\nif (!batches || batches.length === 0) {\n  return [{ json: { query: 'SELECT 1' } }];\n}\nreturn batches.map(batch => ({ json: { query: batch.query } }));"
+        "jsCode": "const data = $('Switch — Router Actions1').item.json;\nconst batches = data.insertSeancesBatches;\nif (!batches || batches.length === 0) {\n return [{ json: { query: 'SELECT 1' } }];\n}\nreturn batches.map(batch => ({ json: { query: batch.query } }));"
       },
-      "id": "f70f0aa4-23ff-417b-9552-85150d9a8870",
-      "name": "Split Batches",
+      "id": "d1ddb136-3739-4399-b809-fcaabe7af75d",
+      "name": "Split Batches1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1952,
-        3600
+        -32,
+        5040
       ]
     },
     {
@@ -333,13 +397,13 @@
         "query": "{{ $json.query }}",
         "options": {}
       },
-      "id": "f6ff8742-febe-494c-aa6a-13aeff10d889",
-      "name": "Insert Séances",
+      "id": "fc154609-f3fa-46cc-8b36-5db961eb4315",
+      "name": "Insert Séances1",
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2,
       "position": [
-        -1728,
-        3600
+        192,
+        5040
       ],
       "credentials": {
         "mySql": {
@@ -354,13 +418,13 @@
         "query": "{{ $json.insertRecommandationsQuery }}",
         "options": {}
       },
-      "id": "85df522f-65d7-461b-b78b-70cb8896c56e",
-      "name": "Insert Recommandations",
+      "id": "f02c39e7-7649-4560-aa57-6b63cd166dac",
+      "name": "Insert Recommandations1",
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2,
       "position": [
-        -1504,
-        3776
+        416,
+        5216
       ],
       "credentials": {
         "mySql": {
@@ -373,28 +437,28 @@
       "parameters": {
         "mode": "combineBySql"
       },
-      "id": "dcbfc87a-bfc6-46e1-a7bf-125150359227",
-      "name": "Merge",
+      "id": "3fd0ec31-6452-43dc-9d46-ad502fcdb172",
+      "name": "Merge2",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        -1504,
-        3504
+        416,
+        4944
       ]
     },
     {
       "parameters": {
         "respondWith": "text",
-        "responseBody": "=Bienvenue voici ton programme personnalisé {{ $('Récup Infos Utilisateur').item.json.pseudo }}!",
+        "responseBody": "=Bienvenue voici ton programme personnalisé {{ $('Récup Infos Utilisateur1').item.json.pseudo }} !\nMatériel pris en compte : {{ $('Récup Infos Utilisateur1').item.json.materiel }}",
         "options": {}
       },
-      "id": "5e243607-97cc-4172-bfdb-5b7493ababff",
-      "name": "Réponse Succès",
+      "id": "dd1f11bf-aa94-44aa-a62a-4c4896ecf45b",
+      "name": "Réponse Succès1",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
-        -1056,
-        3600
+        864,
+        5040
       ]
     },
     {
@@ -405,221 +469,221 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -1280,
-        3600
+        640,
+        5040
       ],
-      "id": "edb619d0-9b50-407d-a5a5-9bada285d92c",
-      "name": "Merge1"
+      "id": "8d4b9fd8-8baf-4be1-9236-e9c75a370243",
+      "name": "Merge3"
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json;\nconst summary = data.summary;\nconst utilisateur_id = data.utilisateur_id;\nconst calories = data.calories;\nconst proteines = data.proteines;\nconst glucides = data.glucides;\nconst lipides = data.lipides;\n\n// On exécute la requête SQL via un nœud MySQL séparé, mais ici on renvoie simplement les données\n// pour que le nœud suivant (MySQL) les utilise.\nreturn [\n  {\n    json: {\n      query: `UPDATE fittracker.utilisateurs SET calories_objectif = ${calories}, proteines_objectif = ${proteines}, glucides_objectif = ${glucides}, lipides_objectif = ${lipides}, modifie_le = NOW() WHERE id = ${utilisateur_id}`,\n      summary: summary\n    }\n  }\n];"
+        "jsCode": "const data = $input.first().json;\nconst summary = data.summary;\nconst utilisateur_id = data.utilisateur_id;\nconst calories = data.calories;\nconst proteines = data.proteines;\nconst glucides = data.glucides;\nconst lipides = data.lipides;\n\nreturn [\n {\n json: {\n query: `UPDATE fittracker.utilisateurs SET calories_objectif = ${calories}, proteines_objectif = ${proteines}, glucides_objectif = ${glucides}, lipides_objectif = ${lipides}, modifie_le = NOW() WHERE id = ${utilisateur_id}`,\n summary: summary\n }\n }\n];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1952,
-        3408
+        -32,
+        4848
       ],
-      "id": "28502161-ecf0-4a7b-933b-911fcf933cce",
-      "name": "Sauvegarde résumé et update"
+      "id": "a0a936c4-4318-4798-beb4-9fa13184f466",
+      "name": "Sauvegarde résumé et update1"
     }
   ],
   "connections": {
-    "Webhook Trigger Inscription1": {
+    "Webhook Inscription": {
       "main": [
         [
           {
-            "node": "Récup Infos Utilisateur",
+            "node": "Récup Infos Utilisateur1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Récup Infos Utilisateur": {
+    "Récup Infos Utilisateur1": {
       "main": [
         [
           {
-            "node": "Récup Liste Exercices",
+            "node": "Récup Liste Exercices1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Récup Liste Exercices": {
+    "Récup Liste Exercices1": {
       "main": [
         [
           {
-            "node": "Calculs & Préparation",
+            "node": "Calculs & Préparation1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Calculs & Préparation": {
+    "Calculs & Préparation1": {
       "main": [
         [
           {
-            "node": "Switch — Jours d'entraînement",
+            "node": "Switch — Jours d'entraînement1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Switch — Jours d'entraînement": {
+    "Switch — Jours d'entraînement1": {
       "main": [
         [
           {
-            "node": "Génération Programme",
+            "node": "Génération Programme1",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Génération Programme",
+            "node": "Génération Programme1",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Génération Programme",
+            "node": "Génération Programme1",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Génération Programme",
+            "node": "Génération Programme1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Génération Programme": {
+    "Génération Programme1": {
       "main": [
         [
           {
-            "node": "Switch — Router Actions",
+            "node": "Switch — Router Actions1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Switch — Router Actions": {
+    "Switch — Router Actions1": {
       "main": [
         [
           {
-            "node": "Sauvegarde résumé et update",
+            "node": "Sauvegarde résumé et update1",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Delete Existing Séances",
+            "node": "Delete Existing Séances1",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Insert Recommandations",
+            "node": "Insert Recommandations1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Update Macros Utilisateur": {
+    "Update Macros Utilisateur1": {
       "main": [
         [
           {
-            "node": "Merge",
+            "node": "Merge2",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Delete Existing Séances": {
+    "Delete Existing Séances1": {
       "main": [
         [
           {
-            "node": "Split Batches",
+            "node": "Split Batches1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Split Batches": {
+    "Split Batches1": {
       "main": [
         [
           {
-            "node": "Insert Séances",
+            "node": "Insert Séances1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Insert Séances": {
+    "Insert Séances1": {
       "main": [
         [
           {
-            "node": "Merge",
+            "node": "Merge2",
             "type": "main",
             "index": 1
           }
         ]
       ]
     },
-    "Insert Recommandations": {
+    "Insert Recommandations1": {
       "main": [
         [
           {
-            "node": "Merge1",
+            "node": "Merge3",
             "type": "main",
             "index": 1
           }
         ]
       ]
     },
-    "Merge": {
+    "Merge2": {
       "main": [
         [
           {
-            "node": "Merge1",
+            "node": "Merge3",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Merge1": {
+    "Merge3": {
       "main": [
         [
           {
-            "node": "Réponse Succès",
+            "node": "Réponse Succès1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Sauvegarde résumé et update": {
+    "Sauvegarde résumé et update1": {
       "main": [
         [
           {
-            "node": "Update Macros Utilisateur",
+            "node": "Update Macros Utilisateur1",
             "type": "main",
             "index": 0
           }

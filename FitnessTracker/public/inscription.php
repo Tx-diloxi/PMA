@@ -87,7 +87,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($result) {
             // --- DÉBUT APPEL N8N ---
             $userId = $connexionBDD->lastInsertId();
-            $webhookUrl = 'http://localhost:5678/webhook/fit-inscription-webhook'; // Remplace par l'URL "Production" de ton nœud Webhook n8n
+            //$webhookUrl = 'http://localhost:5678/webhook/fit-inscription';
+            $webhookUrl = 'http://localhost:5678/webhook/test-fit-inscription'; // URL publique de n8n
 
             $data = ['user_id' => $userId];
 
